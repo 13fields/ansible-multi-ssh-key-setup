@@ -1,0 +1,55 @@
+---
+  - hosts: all
+    become: true
+    tasks: 
+      - name : get the SSH host key from each server
+        command: "ssh-keyscan {{item}}"
+        register: "host_keys"
+        changed_when: false
+        with_items: '{{groups.all}}'
+        delegate_to: localhost
+        become: false 
+  
+      - name: ensure .ssh dir exists 
+        become_user: caspida
+        file:
+          path: "~/.ssh"
+          state: directory
+  
+      - name: write the keys to the ssh known hosts file 
+        become_user: caspida 
+        template:
+          src: "ssh-hosts.j2"
+          dest: "~/.ssh/known_hosts"
+  
+  
+  # Now its time to generate those SSH keys and load them everywhere!         
+      - name : Generate those SSH Keys on each box 
+        become_user: caspida
+        user:
+          name: caspida
+          generate_ssh_key: yes
+          ssh_key_type: rsa
+          ssh_key_bits: 4096
+          ssh_key_file: "~/.ssh/id_rsa"
+          force: no
+  
+      - name : Now get the SSH public key from each box into authorized keys
+        become_user: caspida
+        register: "pub_keys"
+        command: "cat ~/.ssh/id_rsa.pub"
+        changed_when: false
+        with_items: '{{groups.all}}'
+    
+      - name: write the pub keys to the ssh authorized keys
+        become_user: caspida
+        template:
+          src: "ssh-pubauth.j2"
+          dest: "~/.ssh/authorized_keys"
+
+      - name: Set the correct permissions on the authorized keys file 
+        become_user: caspida
+        file:
+          path: "~/.ssh/authorized_keys"
+          mode: "0600"
+

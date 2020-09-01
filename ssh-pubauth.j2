@@ -1,0 +1,6 @@
+{% for item in pub_keys['results'] %}
+{%   for key in item['stdout_lines'] %}
+{{ key }}
+{%   endfor %}
+{% endfor %}
+

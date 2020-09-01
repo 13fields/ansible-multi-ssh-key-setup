@@ -1,0 +1,8 @@
+[hosts]
+host1
+host2
+host3
+
+[all:vars]
+ansible_user=ec2-user
+ansible_ssh_pass=password
